@@ -48,8 +48,11 @@ The project is implemented in Python 3.10.8, using SimPy for event-driven simula
  - Install Python 3.10.8 if not already installed.
  - Install required Python libraries:
 
-   "pip install simpy matplotlib"
-     - 
+
+```bash
+pip install simpy matplotlib
+```
+
  - Clone or download this repository to your local machine
     
 ## How to Run
@@ -57,8 +60,9 @@ The project is implemented in Python 3.10.8, using SimPy for event-driven simula
 - Open a terminal and navigate to the project folder
 - Run the main script
     
-  "522513514_Super_Market.py"
-   - 
+```bash
+522513514_Super_Market.py
+```
 
 - The program will prompt for baseline scenario parameters. You can enter values or simply press Enter to use default values:
 
