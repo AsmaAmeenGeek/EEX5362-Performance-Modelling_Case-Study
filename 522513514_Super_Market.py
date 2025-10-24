@@ -8,7 +8,7 @@ import statistics
 import matplotlib.pyplot as plt
 
 # Supermarket simulation function
-def supermarket_simulation(num_cashiers=4, sim_time=480, arrival_rate=0.4, service_mean=7.5, seed=42, verbose=False, scenario_name="Unnamed"):
+def supermarket_simulation(num_cashiers=4, sim_time=480, arrival_rate=0.4, service_mean=7.5, seed=42, verbose=True, scenario_name="Unnamed"):
        
     # Set random seed for reproducible results
     random.seed(seed)
@@ -169,7 +169,7 @@ def plot_visualizations(results_dict, scenario_name):
     plt.show()
 
 # define the function run_experiments()
-def run_experiments(base_params, verbose=False):
+def run_experiments(base_params, verbose=True):
     """
     Runs multiple scenarios:
     1. Baseline
@@ -247,7 +247,7 @@ if __name__ == "__main__":
     }
     
     # Run all experiment scenarios (verbose True prints live event logs during each run)
-    results = run_experiments(base_params, verbose=False)
+    results = run_experiments(base_params, verbose=True)
     
     print("\nApplication terminated!")
     print("=== Good Bye! ===")
