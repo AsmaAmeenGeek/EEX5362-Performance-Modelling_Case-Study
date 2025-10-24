@@ -3,13 +3,14 @@ import simpy
 import statistics
 import matplotlib.pyplot as plt
 
-def supermarket_simulation(num_cashiers=4, sim_time=480, arrival_rate=0.4, service_mean=7.5, seed=42):
+def supermarket_simulation(num_cashiers=4, sim_time=480, arrival_rate=0.4, service_mean=7.5, seed=42, verbose=False):
     random.seed(seed)
 
     wait_times = []
     total_busy_time = 0.0
     customers_who_waited = 0
     queue_history = []
+    event_logs = []
 
     env = simpy.Environment()
     cashiers = simpy.Resource(env, capacity=num_cashiers)
@@ -17,17 +18,26 @@ def supermarket_simulation(num_cashiers=4, sim_time=480, arrival_rate=0.4, servi
     def customer(env, cust_id):
         nonlocal total_busy_time, customers_who_waited
         arrival_time = env.now
+        event_logs.append(f"Customer {cust_id} arrived at {arrival_time:.2f} min")
         queue_history.append((env.now, len(cashiers.queue)))
+        
         with cashiers.request() as req:
             yield req
-            wait = env.now - arrival_time
+            start_service_time = env.now
+            wait = start_service_time - arrival_time
             wait_times.append(wait)
             if wait > 0:
                 customers_who_waited += 1
+            
+            event_logs.append(f"Customer {cust_id} assigned to cashier at {start_service_time:.2f} min (waited {wait:.2f} min)")
             queue_history.append((env.now, len(cashiers.queue)))
+
             service_time = random.expovariate(1.0 / service_mean)
             total_busy_time += service_time
             yield env.timeout(service_time)
+            
+            depart_time = env.now
+            event_logs.append(f"Customer {cust_id} departed at {depart_time:.2f} min (service {service_time:.2f} min)")
             queue_history.append((env.now, len(cashiers.queue)))
 
     def arrival_generator(env):
@@ -50,13 +60,18 @@ def supermarket_simulation(num_cashiers=4, sim_time=480, arrival_rate=0.4, servi
     percent_immediate = 100.0 - percent_waited
     utilization = min((total_busy_time / (num_cashiers * sim_time) * 100.0), 100.0)
 
-    print("\n=== Simulation Results with Plots ===")
+    print("\n=== Simulation Results ===")
     print(f"Total customers served: {total_served}")
     print(f"Average wait time: {avg_wait:.2f} min")
     print(f"Throughput: {throughput:.3f} cust/min")
     print(f"Percent waited: {percent_waited:.2f}%")
     print(f"Percent immediate: {percent_immediate:.2f}%")
     print(f"Cashier utilization: {utilization:.2f}%")
+
+    if verbose:
+        print("\n--- Event Logs ---")
+        for log in event_logs:
+            print(log)
 
     plt.figure(figsize=(8, 5))
     plt.hist(wait_times, bins=10, edgecolor='black', alpha=0.7)
@@ -88,4 +103,4 @@ def supermarket_simulation(num_cashiers=4, sim_time=480, arrival_rate=0.4, servi
     plt.show()
 
 if __name__ == "__main__":
-    results = supermarket_simulation()
+    results = supermarket_simulation(verbose=True)
