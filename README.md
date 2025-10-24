@@ -101,5 +101,8 @@ The project is implemented in Python 3.10.8, using SimPy for event-driven simula
 - Real Python – Data Visualization with Matplotlib: https://realpython.com/python-matplotlib-guide/
 
 
-
+## Author
+**Asma Ameen**  
+Undergraduate – Bachelor of Software Engineering (Hons)  
+The Open University of Sri Lanka
 
