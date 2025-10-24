@@ -1,22 +1,33 @@
+# M.A. Asma 
+# 522513514
+# S22010125
+
 import random
 import simpy
 import statistics
 import matplotlib.pyplot as plt
 import numpy as np 
 
+
+# Supermarket simulation function
+
 def supermarket_simulation(num_cashiers=4, sim_time=480, arrival_rate=0.4, service_mean=7.5, seed=42, verbose=False, scenario_name="Unnamed"):
-    
+       
+    # Set random seed for reproducible results
     random.seed(seed)
     
-    wait_times = []               
-    total_busy_time = 0.0         
-    customers_who_waited = 0      
-    queue_history = []            
-    event_logs = []              
+    # tracking variables for metrics
+    wait_times = []               # individual wait times
+    total_busy_time = 0.0         # sum of all service times (for utilization)
+    customers_who_waited = 0      # count of customers whose wait > 0
+    queue_history = []            # queue length snapshots over time
+    event_logs = []               # live logs
 
+    # Define SimPy environment and resource (cashiers)
     env = simpy.Environment()
     cashiers = simpy.Resource(env, capacity=num_cashiers)
 
+    # Customer process
     def customer(env, cust_id):
         nonlocal total_busy_time, customers_who_waited
         arrival_time = env.now
@@ -24,8 +35,10 @@ def supermarket_simulation(num_cashiers=4, sim_time=480, arrival_rate=0.4, servi
         event_logs.append(log)
         if verbose: print(log)
         
+        # record queue length at arrival
         queue_history.append((env.now, len(cashiers.queue)))
         
+        # Request a cashier
         with cashiers.request() as req:
             yield req
             start_service_time = env.now
@@ -38,19 +51,24 @@ def supermarket_simulation(num_cashiers=4, sim_time=480, arrival_rate=0.4, servi
             event_logs.append(log)
             if verbose: print(log)
             
+            # record queue length at service start
             queue_history.append((env.now, len(cashiers.queue)))
-
+            
+            # Service time
             service_time = random.expovariate(1.0 / service_mean)
             total_busy_time += service_time
             yield env.timeout(service_time)
             
+            # Departure
             depart_time = env.now
             log = f"Customer {cust_id} departed at {depart_time:.2f} minutes (service {service_time:.2f} min)"
             event_logs.append(log)
             if verbose: print(log)
             
+            # record queue length at departure
             queue_history.append((env.now, len(cashiers.queue)))
 
+    # Arrival generator
     def arrival_generator(env):
         cust_id = 1
         while True:
@@ -61,19 +79,23 @@ def supermarket_simulation(num_cashiers=4, sim_time=480, arrival_rate=0.4, servi
             env.process(customer(env, cust_id))
             cust_id += 1
 
+    # start the arrival generator and run the environment
     env.process(arrival_generator(env))
     env.run(until=sim_time)
 
+    # calculate performance metrics after simulation
     total_served = len(wait_times)
     avg_wait = statistics.mean(wait_times) if wait_times else 0.0
     throughput = total_served / sim_time if sim_time > 0 else 0.0
-    final_queue = len(cashiers.queue) 
+    final_queue = len(cashiers.queue) # how many still waiting at end
     percent_waited = (customers_who_waited / total_served * 100.0) if total_served > 0 else 0.0
     percent_immediate = 100.0 - percent_waited
     utilization = min((total_busy_time / (num_cashiers * sim_time) * 100.0), 100.0)
     
+    # Add a clear header before printing the scenario's summary metrics for better readability in terminal output
     print(f"\n=== {scenario_name} Results ===")
     
+    # Print results summary
     print(f"Simulation complete (time: {sim_time} min).")
     print(f"Total customers served: {total_served}")
     print(f"Average wait time: {avg_wait:.2f} min")
@@ -83,6 +105,7 @@ def supermarket_simulation(num_cashiers=4, sim_time=480, arrival_rate=0.4, servi
     print(f"Percent customers served immediately: {percent_immediate:.2f}%")
     print(f"Cashier utilization: {utilization:.2f}%")
 
+    # return metrics and logs
     return {
         'total_served': total_served,
         'avg_wait': avg_wait,
@@ -100,9 +123,15 @@ def supermarket_simulation(num_cashiers=4, sim_time=480, arrival_rate=0.4, servi
         'service_mean': service_mean
     }
 
+# define the function plot_visualizations()
 def plot_visualizations(results_dict, scenario_name):
-
-
+    """
+    Here are 3 visualizations:
+     1. Histogram of wait times
+     2. Line chart of queue length over time
+     3. Bar chart of key metrics
+    """
+    # Histogram of wait times
     plt.figure(figsize=(8, 5))
     plt.hist(results_dict['wait_times'], bins=10, edgecolor='black', alpha=0.7)
     plt.xlabel('Wait Time (minutes)')
@@ -111,6 +140,7 @@ def plot_visualizations(results_dict, scenario_name):
     plt.savefig(f'wait_histogram_{scenario_name.lower().replace(" ", "_")}.png')
     plt.show()
     
+    # Line plot of queue length over time
     if results_dict['queue_history']:
         times, queue_lens = zip(*results_dict['queue_history'])
     else:
@@ -125,6 +155,7 @@ def plot_visualizations(results_dict, scenario_name):
     plt.savefig(f'queue_line_{scenario_name.lower().replace(" ", "_")}.png')
     plt.show()
     
+    # Bar chart for key metrics (include utilization and percent waited)
     metrics = ['Avg Wait (min)', 'Throughput (cust/min)', 'Final Queue', '% Waited', 'Utilization %']
     values = [results_dict['avg_wait'], results_dict['throughput'], results_dict['final_queue'],
               results_dict['percent_waited'], results_dict['utilization']]
@@ -140,6 +171,7 @@ def plot_visualizations(results_dict, scenario_name):
     plt.savefig(f'metrics_bar_{scenario_name.lower().replace(" ", "_")}.png')
     plt.show()
 
+# define the function run_experiments()
 def run_experiments(base_params, verbose=True):
     """
     Runs multiple scenarios:
@@ -158,6 +190,7 @@ def run_experiments(base_params, verbose=True):
     results_list = []
     scenario_names = []
     
+    # Run each scenario one by one
     for name, params in scenarios:
         print(f"\n--- Running {name} Scenario ---")
         results = supermarket_simulation(num_cashiers=params['num_cashiers'],
@@ -166,16 +199,18 @@ def run_experiments(base_params, verbose=True):
                                         service_mean=params['service_mean'],
                                         seed=params.get('seed', 42),
                                         verbose=verbose,
-                                        scenario_name=name)  
+                                        scenario_name=name)
         results_list.append(results)
         scenario_names.append(name)
     
+    # Print summary table of all results including percentage change vs baseline
     print("\n--- Experiment Summary Table ---")
     print("Scenario\tAvg Wait (min)\tThroughput (cust/min)\tFinal Queue\t%Waited\tUtil(%)")
     for i, name in enumerate(scenario_names):
         r = results_list[i]
         print(f"{name}\t\t{r['avg_wait']:.2f}\t\t{r['throughput']:.3f}\t\t{r['final_queue']}\t\t{r['percent_waited']:.1f}\t{r['utilization']:.1f}")
     
+    # Comparison bar chart for avg wait and throughput
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
     ax1.bar(scenario_names, [r['avg_wait'] for r in results_list], color=['blue', 'red', 'green', 'purple'])
     ax1.set_title('Average Wait Time by Scenario')
@@ -189,17 +224,23 @@ def run_experiments(base_params, verbose=True):
     plt.savefig('scenario_comparison.png')
     plt.show()
     
+    # Detailed visualizations for baseline
     plot_visualizations(results_list[0], scenario_names[0])
     
     return results_list
 
+# Main Program (Entry Point)
 if __name__ == "__main__":
+    print("=== Supermarket Cashier Checkout Simulation ===")
+    print("==============================")
+    # Get user inputs (press Enter for defaults)
     print("Enter parameters for baseline scenario:")
     num_cashiers = int(input("Number of cashiers (default 4): ") or 4)
     sim_time = int(input("Simulation time in minutes (default 480): ") or 480)
     arrival_rate = float(input("Arrival rate (cust/min, default 0.4): ") or 0.4)
     service_mean = float(input("Average service time per customer (min, default 7.5): ") or 7.5)
     
+     # Store baseline parameters
     base_params = {
         'num_cashiers': num_cashiers,
         'sim_time': sim_time,
@@ -208,7 +249,9 @@ if __name__ == "__main__":
         'seed': 42
     }
     
+    # Run all experiment scenarios (verbose True prints live event logs during each run)
     results = run_experiments(base_params, verbose=True)
     
     print("\nApplication terminated!")
     print("=== Good Bye! ===")
+    
