@@ -11,7 +11,7 @@ import numpy as np
 
 # Supermarket simulation function
 
-def supermarket_simulation(num_cashiers=4, sim_time=480, arrival_rate=0.4, service_mean=7.5, seed=42, verbose=False, scenario_name="Unnamed"):
+def supermarket_simulation(num_cashiers=4, sim_time=480, arrival_rate=0.4, service_mean=7.5, seed=42, verbose=True, scenario_name="Unnamed"):
        
     # Set random seed for reproducible results
     random.seed(seed)
